@@ -1,16 +1,18 @@
-﻿using MediaBrowser.Controller.Channels;
+﻿using MediaBrowser.Channels.IPTV.Configuration;
+using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Drawing;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Channels;
 using MediaBrowser.Model.Drawing;
+using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Logging;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaBrowser.Model.Dto;
 
 namespace MediaBrowser.Channels.IPTV
 {
@@ -46,49 +48,67 @@ namespace MediaBrowser.Channels.IPTV
         {
             _logger.Debug("cat ID : " + query.FolderId);
 
-            return await GetChannelItemsInternal(cancellationToken).ConfigureAwait(false);
+            return await GetChannelItemsInternal(query, cancellationToken).ConfigureAwait(false);
         }
 
 
-        private Task<ChannelItemResult> GetChannelItemsInternal(CancellationToken cancellationToken)
+        private async Task<ChannelItemResult> GetChannelItemsInternal(
+            InternalChannelItemQuery query,
+            CancellationToken cancellationToken)
         {
             var items = new List<ChannelItemInfo>();
+            var playlists = Plugin.Instance.Configuration.M3UPlaylists;
 
-            foreach (var s in Plugin.Instance.Configuration.Bookmarks)
+            if (playlists == null)
+                playlists = new List<M3UPlaylist>();
+
+            // ROOT LEVEL: Show playlists as folders
+            if (string.IsNullOrEmpty(query.FolderId))
             {
-                // Until we have user configuration in the UI, we have to disable this.
-                //if (!string.Equals(s.UserId, userId, StringComparison.OrdinalIgnoreCase))
-                //{
-                //    continue;
-                //}
-
-                var item = new ChannelItemInfo
+                foreach (var playlist in playlists)
                 {
-                    Name = s.Name,
-                    ImageUrl = s.Image,
-                    Id = s.Name,
-                    Type = ChannelItemType.Media,
-                    ContentType = ChannelMediaContentType.Clip,
-                    MediaType = ChannelMediaType.Video,
-
-                    MediaSources = new List<MediaSourceInfo>
+                    items.Add(new ChannelItemInfo
                     {
-                        new ChannelMediaInfo
-                        {
-                            Path = s.Path,
-                            Protocol = s.Protocol
-
-                        }.ToMediaSource()
-                    }
-                };
-
-                items.Add(item);
+                        Name = playlist.Name,
+                        Id = "folder-" + playlist.Name,
+                        Type = ChannelItemType.Folder,
+                        ImageUrl = playlist.Image
+                    });
+                }
             }
-            return Task.FromResult(new ChannelItemResult
+
+            // PLAYLIST LEVEL: Show channels inside playlist
+            else if (query.FolderId.StartsWith("folder-"))
             {
-                Items = items.ToList()
-            });
+                var playlistName = query.FolderId.Substring("folder-".Length);
+
+                var playlist = playlists
+                    .FirstOrDefault(p => p.Name.Equals(playlistName, StringComparison.OrdinalIgnoreCase));
+
+                if (playlist != null && !string.IsNullOrEmpty(playlist.Path))
+                {
+                    string m3uContent;
+
+                    using (var client = new System.Net.Http.HttpClient())
+                    {
+                        m3uContent = await client
+                            .GetStringAsync(playlist.Path)
+                            .ConfigureAwait(false);
+                    }
+
+                    var parsedPlaylist = IPTVPlaylist.FromM3U(m3uContent, playlist.Name);
+
+                    items.AddRange(parsedPlaylist.Items);
+                }
+            }
+
+            return new ChannelItemResult
+            {
+                Items = items
+            };
         }
+
+
 
         public IEnumerable<ImageType> GetSupportedChannelImages()
         {

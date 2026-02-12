@@ -1,6 +1,7 @@
 ﻿<div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-horizontal="false" data-forcescrollbar="true" data-centerfocus="true" data-bindheader="true" data-controller="__plugin/iptvjs" data-title="IPTV">
     <div class="scrollSlider flex-grow flex-direction-column padded-left padded-left-page padded-right padded-top-page padded-bottom-page">
 
+        <!-- IPTV Streams Section -->
         <div class="readOnlyContent auto-center">
 
             <div class="flex align-items-center" style="margin: 1em 0;">
@@ -16,24 +17,19 @@
         </div>
 
         <div data-role="popup" data-overlay-theme="a" data-dismissible="false" class="streamPopup dialog dialog-fixedSize dialog-small hide" style="position: fixed; top: 10%;">
-
             <div class="ui-bar-a padded-left padded-right" style="text-align: center;">
                 <h3>New IPTV Stream</h3>
             </div>
             <form class="streamForm padded-left padded-right" style="min-width: 30ch;">
-
                 <div class="inputContainer">
                     <input is="emby-input" label="Name:" class="Name" type="text" required />
                 </div>
-
                 <div class="inputContainer">
                     <input is="emby-input" label="Url:" class="URL" type="url" required />
                 </div>
-
                 <div class="inputContainer">
                     <input is="emby-input" label="Image url:" class="Image" type="text" />
                 </div>
-
                 <div class="selectContainer">
                     <select is="emby-select" label="Protocol:" class="Type">
                         <option value="Http">Http</option>
@@ -42,12 +38,40 @@
                         <option value="Rtsp">Rtsp</option>
                     </select>
                 </div>
-
                 <button type="submit" is="emby-button" class="raised block">Add</button>
                 <button type="button" is="emby-button" class="raised block btnCancel">Cancel</button>
-
             </form>
+        </div>
 
+        <!-- Playlists Section -->
+        <div class="readOnlyContent auto-center" style="margin-top:2em;">
+
+            <div class="flex align-items-center" style="margin: 1em 0;">
+                <h1 style="margin:0;">Playlists</h1>
+                <button is="emby-button" type="button" class="raised btnAddPlaylist submit raised-mini" style="margin-left:1em;" title="Add">
+                    <i class="md-icon button-icon button-icon-left">add</i>
+                    <span>Add</span>
+                </button>
+            </div>
+            <div class="playlistList">
+            </div>
+
+        </div>
+
+        <div data-role="popup" data-overlay-theme="a" data-dismissible="false" class="playlistPopup dialog dialog-fixedSize dialog-small hide" style="position: fixed; top: 10%;">
+            <div class="ui-bar-a padded-left padded-right" style="text-align: center;">
+                <h3>New Playlist</h3>
+            </div>
+            <form class="playlistForm padded-left padded-right" style="min-width: 30ch;">
+                <div class="inputContainer">
+                    <input is="emby-input" label="Name:" class="PlaylistName" type="text" required />
+                </div>
+                <div class="inputContainer">
+                    <input is="emby-input" label="URL:" class="PlaylistURL" type="url" required />
+                </div>
+                <button type="submit" is="emby-button" class="raised block">Add</button>
+                <button type="button" is="emby-button" class="raised block btnCancelPlaylist">Cancel</button>
+            </form>
         </div>
 
     </div>
