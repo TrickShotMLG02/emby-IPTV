@@ -7,6 +7,7 @@ using MediaBrowser.Model.Drawing;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Serialization;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ namespace MediaBrowser.Channels.IPTV
     class Channel : IChannel, IHasCacheKey, IHasChangeEvent
     {
         private readonly ILogger _logger;
+        private readonly IJsonSerializer _json;
 
         public event EventHandler ContentChanged;
 
@@ -30,9 +32,10 @@ namespace MediaBrowser.Channels.IPTV
             }
         }
 
-        public Channel(ILogManager logManager)
+        public Channel(ILogManager logManager, IJsonSerializer json)
         {
             _logger = logManager.GetLogger(GetType().Name);
+            _json = json;
         }
 
         public string DataVersion
@@ -58,6 +61,19 @@ namespace MediaBrowser.Channels.IPTV
         {
             var items = new List<ChannelItemInfo>();
             var playlists = Plugin.Instance.Configuration.M3UPlaylists;
+
+            Dictionary<string, string> logos = null;
+            try
+            {
+                logos = await LogoLoader.LoadLogosAsync(_json).ConfigureAwait(false);
+                
+                _logger?.Debug($"Loaded {logos.Count} Logos for channels");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug($"Failed to load logos: {ex.Message}");
+                logos = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
 
             if (playlists == null)
                 playlists = new List<M3UPlaylist>();
@@ -96,7 +112,7 @@ namespace MediaBrowser.Channels.IPTV
                             .ConfigureAwait(false);
                     }
 
-                    var parsedPlaylist = IPTVPlaylist.FromM3U(m3uContent, playlist.Name);
+                    var parsedPlaylist = IPTVPlaylist.FromM3U(m3uContent, playlist.Name, logos);
 
                     items.AddRange(parsedPlaylist.Items);
                 }

@@ -14,7 +14,7 @@ namespace MediaBrowser.Channels.IPTV
         public string Name { get; set; }
         public List<ChannelItemInfo> Items { get; set; } = new List<ChannelItemInfo>();
 
-        public static IPTVPlaylist FromM3U(string m3uContent, string playlistName)
+        public static IPTVPlaylist FromM3U(string m3uContent, string playlistName, Dictionary<string, string> logos = null)
         {
             var playlist = new IPTVPlaylist { Name = playlistName };
             string[] lines = m3uContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -33,6 +33,8 @@ namespace MediaBrowser.Channels.IPTV
                     var nameSplit = line.Split(new[] { ',' }, 2);
                     string name = nameSplit.Length == 2 ? nameSplit[1].Trim() : "Unknown";
 
+                    var channelId = currentTvgId?.Split('@')[0];
+
                     currentItem = new ChannelItemInfo
                     {
                         Name = name,
@@ -41,6 +43,11 @@ namespace MediaBrowser.Channels.IPTV
                         ContentType = ChannelMediaContentType.Clip,
                         MediaType = ChannelMediaType.Video,
                     };
+
+                    if (!string.IsNullOrEmpty(channelId) && logos != null && logos.TryGetValue(channelId, out string logoUrl))
+                    {
+                        currentItem.ImageUrl = logoUrl;
+                    }
 
                     // Store temporary info for deduplication
                     tempItems.Add((currentItem, currentTvgId, GetResolutionFromTitle(name), GetBaseChannelName(name)));
